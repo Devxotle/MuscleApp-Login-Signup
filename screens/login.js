@@ -2,8 +2,30 @@ import React from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ForgotPass from './forgotPass';
+import { getFirestore, collection, getDocs, query, where } from "firebase/firestore";
+import { initializeApp } from 'firebase/app';
+
+//Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAOHGMhiL6Taeroj7lJuPPWonWMZBju1kc",
+  authDomain: "muscle-control-gym.firebaseapp.com",
+  projectId: "muscle-control-gym",
+  storageBucket: "muscle-control-gym.appspot.com",
+  messagingSenderId: "722584037611",
+  appId: "1:722584037611:web:bf011850a02b506a62b6ae",
+  measurementId: "G-6287LCMKWQ",
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const confirmUser = async (Email, Password)  => {
+  const Query = query(collection(db, "usersInfo"), where( "Email" , "==", Email), where ("Password", "==", Password));
+  const process = await getDocs(Query);
+  return process;
+  };
 
 
+//Main Process
 const Login = ({navigation}) => {
     const [Email, setEmail] = React.useState('');
     const [Password, setPassword] = React.useState('');
@@ -16,27 +38,27 @@ const Login = ({navigation}) => {
         return true;
       };
 
-    const onSubmit = () => {
+    const onSubmit = async () => {
         if (validateEmail(Email)) {
         console.log('Email', Email);
-        console.log('Password', Password);}
+        console.log('Password', Password);
+        try {
+          const proccessUser = await confirmUser(Email, Password); 
+          if (!proccessUser.empty) {
+            proccessUser.forEach((doc) => {
+              console.log(doc.id, " => ", doc.data());
+              Alert.alert( 'Email successfully', 'Email :' + doc.data().Email + 'Password :' + doc.data().Password);
+            });
+          } else {
+            console.log("No matching user found.");
+            Alert.alert( 'Email Failed', 'Wrong Email or Password');
+          }
+        } catch (error) {
+          console.error("Error querying Firestore:", error);
+        }
+      }
     };
 
-    const CustomButton = ({ text, onPress }) => {
-        return (
-          <TouchableOpacity style={styles.customButton} onPress={onPress}>
-            <Text style={styles.buttonText}>{text}</Text>
-          </TouchableOpacity>
-          );
-        };
-
-    const PressText = ({text, style, onPress}) => {
-        return (
-          <TouchableOpacity onPress={onPress} >
-            <Text style={style}>{text}</Text>
-            </TouchableOpacity>
-        );
-      };
     const testing = () => {
       navigation.navigate(ForgotPass);
     };
@@ -101,5 +123,21 @@ const styles = StyleSheet.create({
         fontSize: 15
     }
 });
+//Assets
+const CustomButton = ({ text, onPress }) => {
+  return (
+    <TouchableOpacity style={styles.customButton} onPress={onPress}>
+      <Text style={styles.buttonText}>{text}</Text>
+    </TouchableOpacity>
+    );
+  };
+
+const PressText = ({text, style, onPress}) => {
+  return (
+    <TouchableOpacity onPress={onPress} >
+      <Text style={style}>{text}</Text>
+      </TouchableOpacity>
+  );
+};
 
 export default Login;
